@@ -75,7 +75,7 @@ printf "%s\n\n" "Moving scripts to /USR/SBIN/..."
 if [[ -f "alp-setup" ]]; then mv -f alp-setup /usr/sbin/ ; fi
 if [[ -f "update-alp" ]]; then mv -f update-alp /usr/sbin/ ; fi
 cd $HOME
-rm -rf alpine
+
 
 
 #  Check for existing MARTIN user
@@ -101,7 +101,7 @@ if [[ ! -d "/root/.ssh" ]]; then mkdir /root/.ssh" ; fi
 if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /root/.ssh ; fi
 cd $HOME
 service sshd restart
-
+rm -rf ssh
 
 #  Execute update script
 #if [[ -f "/usr/sbin/update-alp" ]]; then
