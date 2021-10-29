@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/ash
 
 #=============================
 # Initialize For Make
@@ -17,18 +17,14 @@ finterfaces="/etc/network/interfaces"
 fsshd="/etc/ssh/sshd_config"
 fssh="/etc/ssh/ssh_config"
 frepo="/etc/apk/repositories"
-fprof="/etc/profile"
 retval=""
-prof="\[\033[0;31m\]\342\224\214\342\224\200\[\[\033[0;39m\]\u\[\033[01;33m\]@\[\033[01;96m\]\h\[\033[0;31m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;31m\]]\n\[\033[0;31m\]\342\224\224\342\224\200\342\224\200\342\224\200 \[\033[0m\]\[\e[01;33m\]\\$\[\e[0m\]"
 
-
-cp -f $fhosts /etc/hosts.bak
-cp -f $fhostname /etc/hostname.bak
-cp -f $finterfaces /etc/network/interfaces.bak
-cp -f $fssh /etc/ssh/ssh_config.bak
-cp -f $fsshd /etc/ssh/sshd_config.bak
-cp -f $frepo /etc/apk/repositories.bak
-cp -f $fprof /etc/profile.bak
+cp $fhosts /etc/hosts.bak
+cp $fhostname /etc/hostname.bak
+cp $finterfaces /etc/network/interfaces.bak
+cp $fssh /etc/ssh/ssh_config.bak
+cp $fsshd /etc/ssh/sshd_config.bak
+cp $frepo /etc/apk/repositories.bak
 clear
 
 echo "######################################################"
@@ -43,7 +39,7 @@ echo
 
 
 #=============================================
-#     Fuction Definitions
+#     Function Definitions
 #=============================================
 
 
@@ -54,7 +50,7 @@ echo
 #================================
 function GetNetAdapters() {
     unset retval
-    local tmp=$(ip link | awk -F: '$0 !~ "vir|dock|^[^0-9]"{print $2;getline}')
+    local tmp=$(ip link | awk -F: '$0 !~ "vir|veth|dock|^[^0-9]"{print $2;getline}')
     retval=${tmp//[$' \t']/}
     retval=${retval//[$'\r\n']/,}
 }
@@ -267,124 +263,74 @@ if [ $retval == "N" ]; then
 fi
 echo
 
-#===================================
-#  Update Global User Profile
-#===================================
-if [ -f $fprof ]; then
-   echo "Updating user profile......"
-   if [ -f "$fprof.bak" ]; then
-      rm -f $fprof
-      touch $fprof
-
-      file="/etc/profile.bak"
-	  sed -i '/^#export PS1=/d' $file
-	  sed -i '/^export PS1=/d' $file
-      while IFS= read line
-      do
-         echo "$line" >> $fprof
-         if [[ $line = *"export PAGER="* ]]; then
-           echo "export PS1=\"$prof\""  >> $fprof
-         fi
-      done <"$file"
-   fi
-fi
-
 
 #===================================
 #  Update REPOSITORIES file for 
 #  latest-stable repo
+#
+#  UpdateRepositories()
 #===================================
-if [ -f $frepo ]; then
-   echo "Updating $frepo file......"
-   sed -i '1,10d' $frepo
-   echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/main' >> $frepo
-   echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' >> $frepo
-   echo '#http://dl-cdn.alpinelinux.org/alpine/v3.13/main' >> $frepo
-   echo '#http://dl-cdn.alpinelinux.org/alpine/v3.13/community' >> $frepo
-   echo '#http://dl-cdn.alpinelinux.org/alpine/edge/main' >> $frepo
-   echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> $frepo
-   apk update  >> $logfile
-fi
+echo "Updating $frepo file......"
+sed -i '1,10d' $frepo
+echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/main' >> $frepo
+echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' >> $frepo
+echo '#http://dl-cdn.alpinelinux.org/alpine/v3.13/main' >> $frepo
+echo '#http://dl-cdn.alpinelinux.org/alpine/v3.13/community' >> $frepo
+echo '#http://dl-cdn.alpinelinux.org/alpine/edge/main' >> $frepo
+echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> $frepo
+apk update  >> $logfile
 
 
 #=============================
 # Change Hosts File
 #=============================
-if [ -f $fhosts ]; then
-   echo "Updating $fhosts file......"
-   tmp=$(grep -A 0 "127.0.0.1" $fhosts | awk '{print $2}' | awk -F "." '{print $1}')
-   sed -i "s/$tmp/$hostname/g" $fhosts
-fi
+echo "Updating $fhosts file......"
+tmp=$(grep -A 0 "127.0.0.1" $fhosts | awk '{print $2}' | awk -F "." '{print $1}')
+sed -i "s/$tmp/$hostname/g" $fhosts
+
 
 #=============================
 # Change Hostname File
 #=============================
-if [ -f $fhostname ]; then
-   echo "Updating $fhostname file......"
-   tmp=$(awk '{print $1}' $fhostname) 
-   sed -i "s/$tmp/$hostname/g" $fhostname
-fi
+echo "Updating $fhostname file......"
+tmp=$(awk '{print $1}' $fhostname) 
+sed -i "s/$tmp/$hostname/g" $fhostname
+
 
 #=============================
 # Change Interfaces File
 #=============================
-if [ -f $finterfaces ]; then
-   echo "Updating $finterfaces file......"
-   UpdateInterfaces
-fi
+echo "Updating $finterfaces file......"
+UpdateInterfaces
 
 
 #=============================
 # Change SSH Config File
 #=============================
-if [ -f $fsshd ]; then
-   echo "Updating $fsshd file......"
-   sed -i "s/#   Port/Port/" $fssh
-   sed -i "s/Port 22/Port 9922/" $fssh
-   sed -i "s/#Port/Port/" $fsshd
-   sed -i "s/Port 22/Port 9922/" $fsshd
-fi
+echo "Updating $fsshd file......"
+sed -i "s/#   Port/Port/" $fssh
+sed -i "s/Port 22/Port 9922/" $fssh
+sed -i "s/#Port/Port/" $fsshd
+sed -i "s/Port 22/Port 9922/" $fsshd
 
 
 #=============================
 # Remove MOTD
 #=============================
-if [ -f /etc/motd ]; then
-   echo "Removing MOTD file......"
-   rm /etc/motd
-   echo
-fi
-
+echo "Removing MOTD file......"
+rm /etc/motd
+apk update  >> $logfile
+echo
 
 #=============================
 # Add User Martin
 #=============================
-id -u martin >/dev/null 2>&1
-if [ $? -eq 1 ]; then
+GetInput "Create User Martin? [y,N] " "N"
+retval=${retval^^}
+if [ $retval == "Y" ]; then
    adduser -G wheel martin
    echo "Added User Martin ......"
 fi
-
-if [ -d ./.ssl ]; then
-   echo "Adding SSL directory......"
-   mkdir /home/martin/.ssl
-   cp -f ./.ssl/* /home/martin/.ssl
-fi
-
-if [ -f ./update-nano ]; then
-   echo "Adding Nano install script....."
-   cp -f ./update-nano /usr/sbin
-   chmod +x /usr/sbin/update-nano
-fi
-
-if [ -f ./update-alp ]; then
-   echo "Adding Alpine update script....."
-   cp -f ./update-alp /usr/sbin
-   chmod +x /usr/sbin/update-alp
-fi
-
-chown -R martin /home/martin
-chgrp -R wheel /home/martin  
 echo
 
 
@@ -397,11 +343,6 @@ if [ $retval == "Y" ]; then
 	apk add docker  >> $logfile
 	rc-update add docker boot
 	service docker start
-	if [ -f ./daemon-json ]; then
-      cp -f ./daemon.json /etc/docker
-	  service docker restart
-    fi
-	addgrp docker martin
 	echo "Docker installed on $hostname ......"
 	
 	#=============================
@@ -410,24 +351,22 @@ if [ $retval == "Y" ]; then
 	GetInput "Create User Docker? [y,N] " "N"
 	retval=${retval^^}
 	if [ $retval == "Y" ]; then
-	   adduser -G docker docker
+	   adduser -G docker Docker
 	   echo "Added User Docker ......"
 	fi
+	
+	#=============================
+	# Install Docker-compose
+	#=============================
+	GetInput "Install Docker-Compose? [y,N] " "N"
+	retval=${retval^^}
+	if [ $retval == "Y" ]; then
+		apk add docker-compose  >> $logfile
+		echo "Docker-compose installed on $hostname ......"
+	fi
+	echo 	
 fi
 echo
-
-
-#=============================
-# Install Docker-compose
-#=============================
-GetInput "Install Docker-Compose? [y,N] " "N"
-retval=${retval^^}
-if [ $retval == "Y" ]; then
-	apk add docker-compose  >> $logfile
-	echo "Docker-compose installed on $hostname ......"
-fi
-echo 
-
 
 #=============================
 # Install Telegraf
@@ -446,7 +385,6 @@ echo
 #==============================
 #  Cleanup APK files
 #==============================
-echo "Cleaning $hostname APK cache ......"
 apk upgrade --purge  >> $logfile
 rm -rf /var/cache/apk/* /usr/src/*
 

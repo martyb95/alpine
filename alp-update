@@ -1,0 +1,19 @@
+#!/bin/ash
+
+#=============================
+# Initialize For Make
+#=============================
+if [[ $EUID -ne 0 ]]; then
+   echo
+   echo "ERROR - This script must be run as root" 
+   echo
+   exit 1
+fi
+
+apk update
+apk upgrade
+
+apk install bash
+apk install git
+
+git clone https://github.com/martyb95/alpine.git
