@@ -43,18 +43,18 @@ retval=${retval//[$' ~\t']/}
 #  Main Processing
 #=====================================
 clear
-printf "/n/n=====================================================================/n/n"
-printf "   Alpine Setup                                   by: $AUTHOR/n"
-printf "                                             version: $VER/n"
-printf "=====================================================================/n/n"
+printf "\n\n=====================================================================\n\n"
+printf "   Alpine Setup                                   by: $AUTHOR\n"
+printf "                                             version: $VER\n"
+printf "=====================================================================\n\n"
 
 # Update Repositories
-printf "%s/n/n" "Updating Repositories..."
+printf "%s\n\n" "Updating Repositories..."
 apk update
 apk upgrade
 
 # Add missing packages
-printf "%s/n/n" "Updating Packages..."
+printf "%s\n\n" "Updating Packages..."
 apk add bash
 apk add nano
 apk add git
@@ -66,12 +66,12 @@ if [[ ! -d $WORKDIR ]]; then
 fi
 
 #  change intop alpine and update permissions
-printf "%s/n/n" "Updating Script Properties..."
+printf "%s\n\n" "Updating Script Properties..."
 cd /root/alpine
 chmod +x *
 
 #  Move scripts to /USR/SBIN
-printf "%s/n/n" "Moving scripts to /USR/SBIN/..."
+printf "%s\n\n" "Moving scripts to /USR/SBIN/..."
 if [[ -f "alp-setup" ]]; then mv -f alp-setup /usr/sbin/ ; fi
 if [[ -f "update-alp" ]]; then mv -f update-alp /usr/sbin/ ; fi
 cd $HOME
@@ -79,21 +79,21 @@ rm -rf alpine
 
 
 #  Check for existing MARTIN user
-getent passwd martin  > /dev/null
+getent passwd martin  > /dev\null
 if [[ ! $? -eq 0 ]]; then
     # Add User Martin
     adduser -G wheel martin
-    printf "%s/n/n" "Added User Martin..."
+    printf "%s\n\n" "Added User Martin..."
 fi
 
 #  Get SSH from GITHUB
-printf "%s/n/n" "Getting SSH from GitHub..."
+printf "%s\n\n" "Getting SSH from GitHub..."
 cd $HOME
 git clone https://github.com/martyb95/ssh
 cd $HOME/ssh
 
 #  Move files to SSH directories
-printf "%s/n/n" "Moving SSH files to..."
+printf "%s\n\n" "Moving SSH files to..."
 if [[ -f "sshd_config" ]]; then mv -f sshd_config /etc/ssh/ ; fi
 if [[ ! -d "/home/martin/.ssh" ]]; then mkdir /home/martin/.ssh" ; fi
 if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /home/martin/.ssh ; fi
@@ -104,10 +104,10 @@ service sshd restart
 
 
 #  Execute update script
-if [[ -f "/usr/sbin/update-alp" ]]; then
+#if [[ -f "/usr/sbin/update-alp" ]]; then
 #   /usr/sbin/update-alp
-else  
-   printf "%s/n/n" "ERROR - Cannot find /usr/sbin/update-alp..."
-fi
+#else  
+#   printf "%s\n\n" "ERROR - Cannot find /usr/sbin/update-alp..."
+#fi
 
-printf "%s/n/n" "End of Script..."
+printf "%s\n\n" "End of Script..."
