@@ -12,7 +12,7 @@ fi
 
 # Setup global variables
 AUTHOR="Martin Boni"
-VER="1.0.1
+VER="1.0.1"
 WORKDIR="$HOME/alpine"
 REPO="https://github.com/martyb95/alpine.git"
 
@@ -95,10 +95,10 @@ cd $HOME/ssh
 #  Move files to SSH directories
 printf "%s/n/n" "Moving SSH files to..."
 if [[ -f "sshd_config" ]]; then mv -f sshd_config /etc/ssh/ ; fi
-#if [[ ! -d "/home/martin/.ssh" ]]; then mkdir /home/martin/.ssh" ; fi
-#if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /home/martin/.ssh ; fi
-#if [[ ! -d "/root/.ssh" ]]; then mkdir /root/.ssh" ; fi
-#if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /root/.ssh ; fi
+if [[ ! -d "/home/martin/.ssh" ]]; then mkdir /home/martin/.ssh" ; fi
+if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /home/martin/.ssh ; fi
+if [[ ! -d "/root/.ssh" ]]; then mkdir /root/.ssh" ; fi
+if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /root/.ssh ; fi
 cd $HOME
 service sshd restart
 
@@ -110,4 +110,4 @@ else
    printf "%s/n/n" "ERROR - Cannot find /usr/sbin/update-alp..."
 fi
 
-   printf "%s/n/n" "End of Script..."
+printf "%s/n/n" "End of Script..."
