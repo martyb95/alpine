@@ -20,11 +20,18 @@ apk add git
 WORKDIR="$HOME/alpine"
 REPO="https://github.com/martyb95/alpine.git"
 
-if [ ! -d $WORKDIR ]; then ; chdir $HOME ; git clone $REPO ; fi
+if [[ ! -d $WORKDIR ]]; then
+    chdir $HOME
+    git clone $REPO
+fi
 cd /root/alpine
 chmod +x *
 
-if [ -f "alp-setup" ]; then ; mv -f alp-setup /usr/sbin/ ; fi
-if [ -f "update-alp" ]; then ; mv -f update-alp /usr/sbin/ ; fi
+if [[ -f "alp-setup" ]]; then mv -f alp-setup /usr/sbin/ ; fi
+if [[ -f "update-alp" ]]; then mv -f update-alp /usr/sbin/ ; fi
 
-if [ -f "/usr/sbin/update-alp" ]; then ; /usr/sbin/update-alp ; else ; echo "ERROR - Cannot find /usr/sbin/update-alp" ; fi
+if [[f "/usr/sbin/update-alp" ]]; then
+   /usr/sbin/update-alp
+else  
+   echo "ERROR - Cannot find /usr/sbin/update-alp"
+fi
