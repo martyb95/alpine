@@ -1,4 +1,4 @@
-#!/bin/ash
+#!/bin/bash
 
 #=============================
 # Initialize For Make
@@ -341,8 +341,9 @@ GetInput "Install Docker? [y,N] " "N"
 retval=${retval^^}
 if [ $retval == "Y" ]; then
 	apk add docker  >> $logfile
-	rc-update add docker boot
+	rc-update add docker
 	service docker start
+	adduser martin docker
 	echo "Docker installed on $hostname ......"
 	
 	#=============================
