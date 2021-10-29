@@ -110,4 +110,5 @@ rm -rf ssh
 #   printf "%s\n\n" "ERROR - Cannot find /usr/sbin/update-alp..."
 #fi
 
+rm -rf alpine
 printf "%s\n\n" "End of Script..."
