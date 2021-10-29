@@ -13,13 +13,18 @@ fi
 apk update
 apk upgrade
 
-apk install bash
-apk install nano
+apk add bash
+apk add nano
+apk add git
 
+WORKDIR="$HOME/alpine"
+REPO="https://github.com/martyb95/alpine.git"
+
+if [ ! -d $WORKDIR ]; then ; chdir $HOME ; git clone $REPO ; fi
 cd /root/alpine
 chmod +x *
 
-mv -f alp-setup /usr/sbin/
-mv -f update-alp /usr/sbin/
+if [ -f "alp-setup" ]; then ; mv -f alp-setup /usr/sbin/ ; fi
+if [ -f "update-alp" ]; then ; mv -f update-alp /usr/sbin/ ; fi
 
-/usr/sbin/update-alp
+if [ -f "/usr/sbin/update-alp" ]; then ; /usr/sbin/update-alp ; else ; echo "ERROR - Cannot find /usr/sbin/update-alp" ; fi
