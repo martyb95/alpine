@@ -30,7 +30,7 @@ chmod +x *
 if [[ -f "alp-setup" ]]; then mv -f alp-setup /usr/sbin/ ; fi
 if [[ -f "update-alp" ]]; then mv -f update-alp /usr/sbin/ ; fi
 
-if [[f "/usr/sbin/update-alp" ]]; then
+if [[ -f "/usr/sbin/update-alp" ]]; then
    /usr/sbin/update-alp
 else  
    echo "ERROR - Cannot find /usr/sbin/update-alp"
