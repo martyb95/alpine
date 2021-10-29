@@ -1,0 +1,25 @@
+#!/bin/ash
+
+#=============================
+# Initialize For Make
+#=============================
+if [[ $EUID -ne 0 ]]; then
+   echo
+   echo "ERROR - This script must be run as root" 
+   echo
+   exit 1
+fi
+
+apk update
+apk upgrade
+
+apk install bash
+apk install nano
+
+cd /root/alpine
+chmod +x *
+
+mv -f alp-setup /usr/sbin/
+mv -f update-alp /usr/sbin/
+
+/usr/sbin/update-alp
