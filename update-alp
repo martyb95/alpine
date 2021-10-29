@@ -1,0 +1,402 @@
+#!/bin/bash
+
+#=============================
+# Initialize For Make
+#=============================
+if [[ $EUID -ne 0 ]]; then
+   echo
+   echo "ERROR - This script must be run as root" 
+   echo
+   exit 1
+fi
+
+logfile="./update-alpine.log"
+fhosts="/etc/hosts"
+fhostname="/etc/hostname"
+finterfaces="/etc/network/interfaces"
+fsshd="/etc/ssh/sshd_config"
+fssh="/etc/ssh/ssh_config"
+frepo="/etc/apk/repositories"
+retval=""
+
+cp $fhosts /etc/hosts.bak
+cp $fhostname /etc/hostname.bak
+cp $finterfaces /etc/network/interfaces.bak
+cp $fssh /etc/ssh/ssh_config.bak
+cp $fsshd /etc/ssh/sshd_config.bak
+cp $frepo /etc/apk/repositories.bak
+clear
+
+echo "######################################################"
+echo "#                                                    #"
+echo "#           INITIALIZE NEW ALPINE HOST               #"
+echo "#                                                    #"
+echo "# This will update the hosts, hostname, interfaces,  #"
+echo "# and repositiories files with updated machine info  #"
+echo "#                                                    #"
+echo "######################################################"
+echo
+
+
+#=============================================
+#     Function Definitions
+#=============================================
+
+
+#================================
+#  Get list of network adapters
+#
+#  GetNetAdapters()
+#================================
+function GetNetAdapters() {
+    unset retval
+    local tmp=$(ip link | awk -F: '$0 !~ "vir|veth|dock|^[^0-9]"{print $2;getline}')
+    retval=${tmp//[$' \t']/}
+    retval=${retval//[$'\r\n']/,}
+}
+
+#================================
+#  Get network adapters info
+#
+#  GetAdapterInfo() $1 $2
+#    where $1=network adapter
+#	   $2=dnstype, hostname, 
+#             ipaddress, netmask, 
+#             gateway
+#================================
+function GetAdapterInfo() {
+unset retval
+if [ ! -z $1 ]; then
+   if [ ! -z $2 ]; then
+      local tmp=${2^^}
+      if [ $tmp == "DNSTYPE"  ]; then
+         retval=$(grep -A 4 'iface '$1 $finterfaces | awk '{print $4}')
+      else
+         retval=$(grep -A 4 'iface '$1 $finterfaces | grep $2 | awk '{print $2}')
+      fi
+   fi
+fi
+}
+
+#===========================
+#  Read input from user
+#
+#  GetInput() $1
+#    where $1=prompt
+#===========================
+function GetInput() {
+unset retval
+while [ -z $retval ]; do
+    echo -n "$1"
+    unset retval
+    read retval
+    if [ -z $retval ]; then
+       if [ ! -z $2 ]; then
+          retval=$2
+       fi
+    fi
+done
+retval=${retval//[$' ~\t']/}
+}
+
+
+#===================================
+#  Update INTERFACES file for 
+#  static IP address
+#
+#  InterfaceStatic()
+#===================================
+function InterfaceStatic() {
+   if [ $dtype == "static" ]; then
+      sed -i "s/hostname $hname/hostname $hostname/" $finterfaces
+      sed -i "s/$ipaddr/$address/" $finterfaces
+      sed -i "s/$nmask/$netmask/" $finterfaces
+      sed -i "s/$gway/$gateway/" $finterfaces
+   else
+      echo "DHCP --> Static Processing"
+      local value="\ \thostname $hostname\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway"
+      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
+      sed -i "$((line+1)),$((line+2))d" $finterfaces
+      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+   fi
+}
+
+
+#===================================
+#  Update INTERFACES file for 
+#  DHCP IP address
+#
+#  InterfaceDHCP()
+#===================================
+function InterfaceDHCP() {
+   if [ $dtype == "static" ]; then
+      echo "Static --> DHCP Processing"
+      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
+      sed -i "$((line+1)),$((line+5))d" $finterfaces
+      local value="\ \thostname $hostname"
+      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+   else
+      echo "DHCP --> DHCP Processing"
+      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
+      sed -i "$((line+1)),$((line+2))d" $finterfaces
+      local value="\ \thostname $hostname"
+      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+   fi
+}
+
+
+#===================================
+#  Update values in INTERFACES file
+#
+#  UpdateInterfaces()
+#===================================
+function UpdateInterfaces() {
+    dnstype=${dnstype,,}
+    dtype=${dtype,,}
+    sed -i "s/iface $adapt inet $dtype/iface $adapt inet $dnstype/" $finterfaces
+
+    if [ $dnstype == "static" ]; then
+       InterfaceStatic
+    else
+       InterfaceDHCP
+    fi
+}
+
+
+
+
+
+#=============================================
+#     Start of Processing Logic
+#=============================================
+
+#===============================
+# Get existing network settings
+#===============================
+# Get Network Adapters
+GetNetAdapters && nlist=$retval
+
+flg=true
+while [ $flg == true ]; do
+    GetInput "Select Network Adapter [$nlist]: " "eth0"&& adapt=$retval
+    if [ -z $adapt ]; then
+       flg=true
+       echo "ERROR - Network adapter must be entered"
+       echo
+    else
+       if [[ $nlist =~ (^|,)"$adapt"(,|$) ]]; then
+          flg=false
+       else
+          flg=true
+          echo "ERROR - Network adapter must be one of the listed"
+          echo
+       fi
+    fi
+done
+unset flg
+
+
+# Get network info
+GetAdapterInfo $adapt "dnstype" && dtype=$retval
+GetAdapterInfo $adapt "hostname" && hname=$retval
+GetAdapterInfo $adapt "address" && ipaddr=$retval
+GetAdapterInfo $adapt "netmask" && nmask=$retval
+GetAdapterInfo $adapt "gateway" && gway=$retval
+
+
+#=============================
+# Change Hostname
+#=============================
+GetInput "Enter hostname [$hname]: " $hname  && hostname=$retval
+
+
+#=============================
+# Change Network Settings
+#=============================
+flg=true
+while [ $flg == true ]; do
+    GetInput "Enter DNS Type [static,DHCP]: " "dhcp" && dnstype=$retval
+    if [ -z $dnstype ]; then
+       flg=true
+       echo "ERROR - DNS type must be entered"
+       echo
+    else
+       if [[ "DHCP,STATIC" =~ (^|,)"${dnstype^^}"(,|$) ]]; then
+          flg=false
+       else
+          flg=true
+          echo "ERROR - DNS type must be one of the listed"
+          echo
+       fi
+    fi
+done
+unset flg
+
+if [ ${dnstype,,} == "static" ]; then
+   GetInput "Enter IP Address [$ipaddr]: " $ipaddr && address=$retval
+   GetInput "Enter netmask [$nmask]: " $nmask && netmask=$retval
+   GetInput "Enter Gateway [$gway]: " $gway  && gateway=$retval
+fi
+
+echo
+echo
+printf '  %-12s %-16s %-16s\n' " " "Old Value" "New Value"
+echo "+------------------------------------------------+"
+printf '| %-12s %-16s %-16s |\n' "Adapter:" "${adapt}" " "
+printf '| %-12s %-16s %-16s |\n' "Hostname:" "${hname}" "${hostname}"
+printf '| %-12s %-16s %-16s |\n' "DNS Type:" "${dtype}" "${dnstype}"
+printf '| %-12s %-16s %-16s |\n' "IP Address:" "${ipaddr}" "${address}"
+printf '| %-12s %-16s %-16s |\n' "Netmask:" "${nmask}" "${netmask}"
+printf '| %-12s %-16s %-16s |\n' "Gateway:" "${gway}" "${gateway}"
+echo "+------------------------------------------------+"
+echo
+
+
+#=============================
+# Change Hosts File
+#=============================
+GetInput "Make Changes? [y,N] " "N"
+retval=${retval^^}
+if [ $retval == "N" ]; then
+   echo
+   exit 0
+fi
+echo
+
+
+#===================================
+#  Update REPOSITORIES file for 
+#  latest-stable repo
+#
+#  UpdateRepositories()
+#===================================
+echo "Updating $frepo file......"
+sed -i '1,10d' $frepo
+echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/main' >> $frepo
+echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' >> $frepo
+echo '#http://dl-cdn.alpinelinux.org/alpine/v3.13/main' >> $frepo
+echo '#http://dl-cdn.alpinelinux.org/alpine/v3.13/community' >> $frepo
+echo '#http://dl-cdn.alpinelinux.org/alpine/edge/main' >> $frepo
+echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> $frepo
+apk update  >> $logfile
+
+
+#=============================
+# Change Hosts File
+#=============================
+echo "Updating $fhosts file......"
+tmp=$(grep -A 0 "127.0.0.1" $fhosts | awk '{print $2}' | awk -F "." '{print $1}')
+sed -i "s/$tmp/$hostname/g" $fhosts
+
+
+#=============================
+# Change Hostname File
+#=============================
+echo "Updating $fhostname file......"
+tmp=$(awk '{print $1}' $fhostname) 
+sed -i "s/$tmp/$hostname/g" $fhostname
+
+
+#=============================
+# Change Interfaces File
+#=============================
+echo "Updating $finterfaces file......"
+UpdateInterfaces
+
+
+#=============================
+# Change SSH Config File
+#=============================
+echo "Updating $fsshd file......"
+sed -i "s/#   Port/Port/" $fssh
+sed -i "s/Port 22/Port 9922/" $fssh
+sed -i "s/#Port/Port/" $fsshd
+sed -i "s/Port 22/Port 9922/" $fsshd
+
+
+#=============================
+# Remove MOTD
+#=============================
+echo "Removing MOTD file......"
+rm /etc/motd
+apk update  >> $logfile
+echo
+
+#=============================
+# Add User Martin
+#=============================
+GetInput "Create User Martin? [y,N] " "N"
+retval=${retval^^}
+if [ $retval == "Y" ]; then
+   adduser -G wheel martin
+   echo "Added User Martin ......"
+fi
+echo
+
+
+#=============================
+# Install Docker
+#=============================
+GetInput "Install Docker? [y,N] " "N"
+retval=${retval^^}
+if [ $retval == "Y" ]; then
+	apk add docker  >> $logfile
+	rc-update add docker
+	service docker start
+	adduser martin docker
+	echo "Docker installed on $hostname ......"
+	
+	#=============================
+	# Add User Docker
+	#=============================
+	GetInput "Create User Docker? [y,N] " "N"
+	retval=${retval^^}
+	if [ $retval == "Y" ]; then
+	   adduser -G docker Docker
+	   echo "Added User Docker ......"
+	fi
+	
+	#=============================
+	# Install Docker-compose
+	#=============================
+	GetInput "Install Docker-Compose? [y,N] " "N"
+	retval=${retval^^}
+	if [ $retval == "Y" ]; then
+		apk add docker-compose  >> $logfile
+		echo "Docker-compose installed on $hostname ......"
+	fi
+	echo 	
+fi
+echo
+
+#=============================
+# Install Telegraf
+#=============================
+GetInput "Install Telegraf? [y,N] " "N"
+retval=${retval^^}
+if [ $retval == "Y" ]; then
+   apk add telegraf  >> $logfile
+   rc-update add telegraf default
+   service telegraf start
+   echo "Telegraf installed on $hostname ......"
+fi
+echo
+
+
+#==============================
+#  Cleanup APK files
+#==============================
+apk upgrade --purge  >> $logfile
+rm -rf /var/cache/apk/* /usr/src/*
+
+
+echo "###################################################"
+echo "#                                                 #"
+printf '#    %-40s     #\n' "UPDATE OF $hostname COMPLETE"
+echo "#                                                 #"
+echo "#                                                 #"
+echo "#  NOTE: a reboot is required in order to make    #"
+echo "#        the changes permanant                    #"
+echo "#                                                 #"
+echo "###################################################"
+echo
