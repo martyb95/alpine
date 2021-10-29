@@ -74,18 +74,31 @@ chmod +x *
 printf "%s/n/n" "Moving scripts to /USR/SBIN/..."
 if [[ -f "alp-setup" ]]; then mv -f alp-setup /usr/sbin/ ; fi
 if [[ -f "update-alp" ]]; then mv -f update-alp /usr/sbin/ ; fi
+cd $HOME
+rm -rf alpine
+
 
 #  Check for existing MARTIN user
 getent passwd martin  > /dev/null
 if [[ ! $? -eq 0 ]]; then
     # Add User Martin
-    GetInput "Create User Martin? [y,N] " "N"
-    retval=${retval^^}
-    if [[ $retval == "Y" ]]; then
-        adduser -G wheel martin
-		printf "%s/n/n" "Added User Martin..."
-    fi
+    adduser -G wheel martin
+    printf "%s/n/n" "Added User Martin..."
 fi
+
+#  Get SSH from GITHUB
+printf "%s/n/n" "Getting SSH from GitHub..."
+cd $HOME
+git clone https://github.com/martyb95/ssh
+cd $HOME/ssh
+
+#  Move files to SSH directories
+printf "%s/n/n" "Moving SSH files to..."
+if [[ -f "sshd_config" ]]; then mv -f sshd_config /etc/ssh/ ; fi
+if [[ ! -d "/home/martin/.ssh/" ]]; then mkdir /home/martin/.ssh/" ; fi
+if [[ -f "authorized_keys" ]]; then mv -f authorized_keys /home/martin/.ssh/ ; fi
+cd $HOME
+service sshd restart
 
 
 #  Execute update script
