@@ -1,11 +1,33 @@
 export PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 export PAGER=less
-export PS1="\[\033[0;31m\]\342\224\214\342\224\200\[\[\033[0;39m\]\u\[\033[01;33m\]@\[\033[01;96m\]\h\[\033[0;31m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;31m\]]\n\[\033[0;31m\]\342\224\224\342\224\200\342\224\200\342\224\200 \[\033[0m\]\[\e[01;33m\]\\$\[\e[0m\]"
+unset -f append_path
 
+export PATH
+export PAGER=less
 umask 022
 
+# set up fallback default PS1
+: "${HOSTNAME:=$(hostname)}"
+PS1='${HOSTNAME%%.*}:$PWD'
+[ "$(id -u)" = "0" ] && PS1="${PS1}# "
+[ "$(id -u)" = "0" ] || PS1="${PS1}\$ "
+
+# use nicer PS1 for bash and busybox ash
+[ -n "$BASH_VERSION" -o "$BB_ASH_VERSION" ] && PS1='\h:\w\$ '
+
+# use nicer PS1 for zsh
+[ -n "$ZSH_VERSION" ] && PS1='%m:%~%# '
+
+# Override PS1 
+PS1="\[\033[0;31m\]\342\224\214\342\224\200\[\[\033[0;39m\]\u\[\033[01;33m\]@\[\033[01;96m\]\h\[\033[0;31m\]]\342\224\200[\[\033[0;32m\]\w\[\033[0;31m\]]\n\[\033[0;31m\]\342\224\224\342\224\200\342\224\200\342\224\200 \[\033[0m\]\[\e[01;33m\]\\$\[\e[0m\]"
+
+# export PS1 as before
+export PS1
+
 for script in /etc/profile.d/*.sh ; do
-        if [ -r $script ] ; then
-                . $script
+        if [ -r "$script" ] ; then
+                . "$script"
         fi
 done
+unset script
+
