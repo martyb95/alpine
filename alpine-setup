@@ -1,0 +1,79 @@
+#!/bin/ash
+
+#==================================
+#  Global Variables
+#=================================
+SCRIPTDIR="/usr/includes"            #This variable is required for all scripts
+LOG="${HOME}/alpine-setup.log"       #This variable is required for all scripts
+
+AUTHOR="Martin Boni"
+VER="1.0.1"
+
+
+#==================================
+#  Include Files
+#=================================
+if [ ! -f "$SCRIPTDIR/system.sh" ]; then SCRIPTDIR="./scripts"; fi
+
+. "${SCRIPTDIR}/system.sh"
+. "${SCRIPTDIR}/borders.sh"
+. "${SCRIPTDIR}/input.sh"
+. "${SCRIPTDIR}/network.sh"
+
+
+#-------------------------------------
+#  Input Functions for Application
+#-------------------------------------
+. "./alp-include.sh"
+
+
+#==================================
+#  Main()  - Main Processing
+#=================================
+main() {
+   CheckPriv
+   LogOpen
+
+   #=====[ Application Header ]=====
+   PrintHdr "Alpine Linux Setup Script" 65
+   printf "\n"
+
+   #=====[ User Inputs ]=====
+   SectionHdr "User Inputs" 1
+   ChooseUsers
+   ChoosePkgs
+   ChooseSys
+   ChooseAdapter
+   printf "\n"
+   GetYesNo "User Input Complete. Execute Script?" "Yes"
+   SectionFtr 1
+   printf "\n\n"
+   if [ "$retval" == "N" ]; then exit 0; fi
+
+
+   #=====[ User Inputs ]=====
+   SectionHdr "Script Initialization"
+   CheckPriv 1
+   UpdateRepos
+   InstallPkgs
+   SectionFtr
+
+   SectionHdr "GITHUB Repository"
+   SetupGIT
+   MoveScripts
+   SectionFtr
+
+   SectionHdr "Alpine System Setup"
+   SystemSetup
+   SectionFtr
+
+   SectionHdr "Setup Users & Permissions"
+   AddUser "martin" "wheel"
+   SectionFtr
+
+   SectionHdr "Network Setup"
+#   UpdateInterfaces
+   SectionFtr
+}
+
+main "$&"
