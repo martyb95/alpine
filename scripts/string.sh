@@ -11,7 +11,7 @@
 #-------------------------------------------------------------------
 Upper() {
    if [ -z "$1" ]; then echo "ERROR - No string passed to Upper()";  return 1; fi
-   printf "%s" $(echo "$1" | tr '[:lower:]' '[:upper:]')
+   printf "%s" "$(printf "$1" | tr '[:lower:]' '[:upper:]')"
 }
 
 #-------------------------------------------------------------------
@@ -21,7 +21,7 @@ Upper() {
 #-------------------------------------------------------------------
 Lower() {
    if [ -z "$1" ]; then echo "ERROR - No string passed to Lower()"; return 1; fi
-   printf "%s" $(echo "$1" | tr '[:upper:]' '[:lower:]')
+   printf "%s" "$(printf "$1" | tr '[:upper:]' '[:lower:]')"
 }
 
 #------------------------------------------------
@@ -31,7 +31,7 @@ Lower() {
 #------------------------------------------------
 Trim () {
    if [ -z "$1" ]; then echo "ERROR - No string passed to Trim()";  return 1; fi
-   printf "%s" $(echo "$1" | xargs)
+   printf "%s" "$(printf "$1" | xargs)"
 }
 
 #--------------------------------------------

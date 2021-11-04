@@ -36,9 +36,10 @@ ChooseUsers() {
    printf "\n"
    unset ulist
    while [ 1 ]; do
-      GetInput "Enter Username to Create"
+      GetInput "Enter Username"
       if [ -z "$retval" ]; then break; fi
       retval=$(Trim "$retval")
+	  
       if [ -z $ulist ]; then
          ulist="$retval";
       else
@@ -115,6 +116,12 @@ ChooseAdapter() {
    printf '     %-12s %-16s %-16s \n' "Netmask:" "${nmask}"
    printf '     %-12s %-16s %-16s \n\n' "Gateway:" "${gway}"
 
+   hname=$(Trim "$hname")
+   dtype=$(Trim "$dtype")
+   ipaddr=$(Trim "$ipaddr")
+   nmask=$(Trim "$nmask")
+   gway=$(Trim "$gway")
+
    local ChgNet="no"
    GetYesNo "Do you wish to change any of these settings?" "No"; ChgNet="$retval"
    if [ $ChgNet == "Y" ]; then ChooseNetwork; fi
@@ -129,14 +136,32 @@ ChooseAdapter() {
 ChooseNetwork() {
    printf "\n"
    # Change Hostname
-   if [ -z "$hname" ]; then hname="hostname"; fi
-   GetInput "New Hostname" "$hname" && hostname=$(Trim $(Lower "$retval"))
+   if [ -z "$hname" ]; then 
+      GetInput "New Hostname" && hostname=$(Trim $(Lower "$retval"))
+   else
+      GetInput "New Hostname" "$hname" && hostname=$(Trim $(Lower "$retval"))
+   fi
+
    local list="dhcp,static"
    GetFromList "New DNS Type" "$dtype" "$list" && dnstype=$(Trim $(Lower "$retval"))
    if [ "$dnstype" == "static" ]; then
-      GetInput "Enter New IP Address" "$ipaddr" && ipaddress=$(Trim "$retval")
-      GetInput "Enter New netmask" "$nmask" && netmask=$retval
-      GetInput "Enter New Gateway" "$gway"  && gateway=$retval
+      if [ -z "$ipaddr" ]; then
+         GetInput "Enter New IP Address" && ipaddress=$(Trim "$retval")
+      else
+         GetInput "Enter New IP Address" "$ipaddr" && ipaddress=$(Trim "$retval")
+      fi
+
+      if [ -z "$nmask" ]; then
+         GetInput "Enter New netmask" && netmask=$retval
+      else
+         GetInput "Enter New netmask" "$nmask" && netmask=$retval
+      fi
+
+      if [ -z "$gway" ]; then
+         GetInput "Enter New Gateway" && gateway=$retval
+      else
+         GetInput "Enter New Gateway" "$gway"  && gateway=$retval
+      fi
    fi
 }
 

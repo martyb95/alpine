@@ -29,7 +29,31 @@ gateway=
 #   Network Functions
 #===================================
 
-
+BackupNet() {
+    echo "====== Create Backup of $fhosts ======" >> $LOG 2>&1
+    if [ -f "${fhost}.bak" ]; then
+	   cp $fhosts "${fhost}.bak" >> $LOG 2>&1
+       SectionRow "Create Backup of $fhosts" "DONE"
+	else
+       SectionRow "Create Backup of $fhosts" "BYPASSED" 1
+    fi
+	
+    echo "====== Create Backup of $fhostname ======" >> $LOG 2>&1
+    if [ -f "${fhostname}.bak" ]; then
+	   cp $fhostname "${fhostname}.bak" >> $LOG 2>&1
+       SectionRow "Create Backup of $fhostname" "DONE"
+	else
+       SectionRow "Create Backup of $fhostname" "BYPASSED" 1
+    fi
+	
+    echo "====== Create Backup of $finterfaces ======" >> $LOG 2>&1
+    if [ -f "${finterfaces}.bak" ]; then
+	   cp $finterfaces "${finterfaces}.bak" >> $LOG 2>&1
+       SectionRow "Create Backup of $finterfaces" "DONE"
+	else
+       SectionRow "Create Backup of $finterfaces" "BYPASSED" 1
+    fi
+}
 
 #-------------------------------------------------
 #  GetNetAdapters()
@@ -76,5 +100,96 @@ GetAdapterInfo() {
          esac
       fi
    fi
+   
+   if [ -z "$retval" ]; then retval=" "; fi
    return 0
 }
+
+
+#--------------------------------------------
+#  UpdateInterface()
+#     This will do an update of the network
+#     settings for either a static or DHCP
+#     network setup.
+#--------------------------------------------
+UpdateInterface() {
+   if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateInterface()"; return 1; fi
+   if [ -z "$dtype" ]; then echo "ERROR - there is no old dns type specified for UpdateInterface()"; return 1; fi
+   if [ -z "$dnstype" ]; then echo "ERROR - there is no new dns type specified for UpdateInterface()"; return 1; fi
+
+   sed -i "s/iface $adapt inet $dtype/iface $adapt inet $dnstype/" $finterfaces
+   if [ "$dnstype" == "static" ]; then
+      UpdateStatic
+   else
+      UpdateDHCP
+   fi
+}
+
+#--------------------------------------------
+#  UpdateStatic()
+#     If setting static IP this function
+#     will prompt for hostname, dnstype,
+#     ip address, network mask, and gateway.
+#--------------------------------------------
+UpdateStatic() {
+   if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateStatic()"; return 1; fi
+   if [ -z "$dtype" ]; then echo "ERROR - no existing dns type specified for UpdateStatic()"; return 1; fi
+
+   if [ "$dtype" == "static" ]; then
+      #echo "Static --> DHCP Processing"
+      if [ -z "$hname" ]; then echo "ERROR - no existing hostname specified for Static()"; return 1; fi
+      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateStatic()"; return 1; fi
+      if [ -z "$ipaddr" ]; then echo "ERROR - no existing ip address specified for UpdateStatic()"; return 1; fi
+      if [ -z "$nmask" ]; then echo "ERROR - no existing netmask specified for UpdateStatic()"; return 1; fi
+      if [ -z "$gway" ]; then echo "ERROR - no existing gateway specified for UpdateStatic()"; return 1; fi
+
+      sed -i "s/hostname $hname/hostname $hostname/" $finterfaces
+      sed -i "s/$ipaddr/$address/" $finterfaces
+      sed -i "s/$nmask/$netmask/" $finterfaces
+      sed -i "s/$gway/$gateway/" $finterfaces
+   else
+      #echo "DHCP --> Static Processing"
+      if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateStatic()"; return 1; fi
+      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateStatic()"; return 1; fi
+      if [ -z "$ipaddress" ]; then echo "ERROR - no new ip address specified for UpdateStatic()"; return 1; fi
+      if [ -z "$netmask" ]; then echo "ERROR - no new netmask specified for UpdateStatic()"; return 1; fi
+      if [ -z "$gateway" ]; then echo "ERROR - no new gateway specified for UpdateStatic()"; return 1; fi
+
+      local value="\ \thostname $hostname\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway"
+      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
+      sed -i "$((line+1)),$((line+2))d" $finterfaces
+      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+   fi
+}
+
+#--------------------------------------------
+#  UpdateDHCP()
+#     If setting static IP this function
+#     will prompt for hostname, dnstype,
+#     ip address, network mask, and gateway.
+#--------------------------------------------
+UpdateDHCP() {
+   if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateDHCP()"; return 1; fi
+   if [ -z "$dtype" ]; then echo "ERROR - no existing dns type specified for UpdateDHCP()"; return 1; fi
+
+   if [ "$dtype" == "static" ]; then
+      echo "Static --> DHCP Processing"
+      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateDHCP()"; return 1; fi
+      if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateDHCP()"; return 1; fi
+
+      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
+      sed -i "$((line+1)),$((line+5))d" $finterfaces
+      local value="\ \thostname $hostname"
+      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+   else
+      echo "DHCP --> DHCP Processing"
+      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateDHCP()"; return 1; fi
+      if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateDHCP()"; return 1; fi
+
+      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
+      sed -i "$((line+1)),$((line+2))d" $finterfaces
+      local value="\ \thostname $hostname"
+      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+   fi
+}
+

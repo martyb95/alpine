@@ -22,9 +22,9 @@ GetInput() {
    if [ -z $2 ]; then printf "%s: " "$1"; else printf "%s [%s]: " "$1" "$2"; fi
    IFS="~"
    read retval
-   if [ -z $retval ]; then retval=$(Trim "$2"); fi  
+   if [ -z $retval ]; then retval="$2"; fi  
    retval=$(echo $retval | sed 's/^[ \t]*//;s/[ \t]*$//')
-   retval=$(Trim "$retval")
+   if [ ! -z "$retval" ]; then retval=$(Trim "$retval"); fi
    unset IFS
    return 0
 }

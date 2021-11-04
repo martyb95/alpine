@@ -3,7 +3,7 @@
 #==================================
 #  Global Variables
 #=================================
-SCRIPTDIR="/usr/includes"            #This variable is required for all scripts
+SCRIPTDIR="/usr/include"            #This variable is required for all scripts
 LOG="${HOME}/alpine-setup.log"       #This variable is required for all scripts
 
 AUTHOR="Martin Boni"
@@ -19,12 +19,7 @@ if [ ! -f "$SCRIPTDIR/system.sh" ]; then SCRIPTDIR="./scripts"; fi
 . "${SCRIPTDIR}/borders.sh"
 . "${SCRIPTDIR}/input.sh"
 . "${SCRIPTDIR}/network.sh"
-
-
-#-------------------------------------
-#  Input Functions for Application
-#-------------------------------------
-. "./alp-include.sh"
+. "${SCRIPTDIR}/alp-include.sh"
 
 
 #==================================
@@ -54,8 +49,9 @@ main() {
    #=====[ User Inputs ]=====
    SectionHdr "Script Initialization"
    CheckPriv 1
+   BackupSys
+   BackupNet   
    UpdateRepos
-   InstallPkgs
    SectionFtr
 
    SectionHdr "GITHUB Repository"
@@ -64,6 +60,7 @@ main() {
    SectionFtr
 
    SectionHdr "Alpine System Setup"
+   InstallPkgs
    SystemSetup
    SectionFtr
 
@@ -72,7 +69,7 @@ main() {
    SectionFtr
 
    SectionHdr "Network Setup"
-#   UpdateInterfaces
+   UpdateInterface
    SectionFtr
 }
 
