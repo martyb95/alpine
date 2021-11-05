@@ -430,7 +430,8 @@ AddUser() {
       SectionRow "Add User $USR" "BYPASSED" 1
    else
       echo "====== Adding User $USR =====" >> $LOG 2>&1
-      adduser -G "$GRP" "$USR"  >> $LOG 2>&1
+      SectionPrt "Adding User $USR to system"
+      adduser -G "$GRP" "$USR"
       SectionRow "Add User $USR" "ADDED"
    fi
 
@@ -450,6 +451,7 @@ AddUser() {
    echo "===== CREATE Directory /home/$USR/.ssh =====" >> $LOG 2>&1
    if [[ ! -d "/home/$USR/.ssh" ]]; then
       mkdir /home/$USR/.ssh >> $LOG 2>&1
+      chmod 744 /home/$USR/.ssh >> $LOG 2>&1
       SectionRow "Creating Directory /home/$USR/.ssh" "CREATED"
    else
       SectionRow "Creating Directory /home/$USR/.ssh" "BYPASSED" 1
@@ -458,6 +460,7 @@ AddUser() {
    echo "===== Moving SSH KEYS to /home/$USR/.ssh =====" >> $LOG 2>&1
    if [[ -f "authorized_keys" ]]; then
       cp -f authorized_keys /home/$USR/.ssh >> $LOG 2>&1
+      chmod 644 /home/$USR/.ssh/authorized_keys >> $LOG 2>&1
       SectionRow "Moving SSH KEYS to /home/$USR/.ssh" "MOVED"
    else
       SectionRow "Moving SSH KEYS to /home/$USR/.ssh" "NOT FOUND" 1
@@ -466,6 +469,7 @@ AddUser() {
    echo "===== CREATE Directory /root/.ssh =====" >> $LOG 2>&1
    if [[ ! -d "/root/.ssh" ]]; then
       mkdir /root/.ssh >> $LOG 2>&1
+      chmod 744 /home/$USR/.ssh >> $LOG 2>&1
       SectionRow "CREATE Directory /root/.ssh" "CREATED"
    else
       SectionRow "CREATE Directory /root/.ssh" "BYPASSED" 1
@@ -474,6 +478,7 @@ AddUser() {
    echo "===== Moving SSH KEYS to /root/.ssh =====" >> $LOG 2>&1
    if [[ -f "authorized_keys" ]]; then 
       cp -f authorized_keys /root/.ssh >> $LOG 2>&1
+      chmod 644 /root/.ssh/authorized_keys >> $LOG 2>&1
       SectionRow "Moving SSH KEYS to /root/.ssh" "MOVED"
    else
       SectionRow "Moving SSH KEYS to /root/.ssh" "NOT FOUND" 1
