@@ -128,6 +128,7 @@ SectionRow() {
    else
       printf "| %-s%s [${BIRED}%-12s${RSET}]   |\n" "$1" "${sp:0:$fill}" "$(Center "$2" 12)"
    fi
+   printf "     %-s [%-s]\n" "$1" "$2" >> $LOG
    return 0
 }
 
@@ -147,5 +148,6 @@ SectionPrt() {
    else
       printf "| ${BIRED}%-s${RSET}%s |\n" "$1" "${sp:0:$fill}"
    fi
+   printf "     %-s\n" "$1" >> $LOG
    return 0
 }

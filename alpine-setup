@@ -56,7 +56,6 @@ main() {
 
    SectionHdr "GITHUB Repository"
    SetupGIT
-   MoveScripts
    SectionFtr
 
    SectionHdr "Alpine System Setup"

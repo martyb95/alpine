@@ -167,101 +167,6 @@ ChooseNetwork() {
 
 
 
-
-#==============================================================================
-#   Application Network Functions
-#==============================================================================
-
-
-#--------------------------------------------
-#  UpdateInterface()
-#     This will do an update of the network
-#     settings for either a static or DHCP
-#     network setup.
-#--------------------------------------------
-UpdateInterface() {
-   if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateInterface()"; return 1; fi
-   if [ -z "$dtype" ]; then echo "ERROR - there is no old dns type specified for UpdateInterface()"; return 1; fi
-   if [ -z "$dnstype" ]; then echo "ERROR - there is no new dns type specified for UpdateInterface()"; return 1; fi
-
-   sed -i "s/iface $adapt inet $dtype/iface $adapt inet $dnstype/" $finterfaces
-   if [ "$dnstype" == "static" ]; then
-      UpdateStatic
-   else
-      UpdateDHCP
-   fi
-}
-
-#--------------------------------------------
-#  ChooseNetwork()
-#     If setting static IP this function
-#     will prompt for hostname, dnstype,
-#     ip address, network mask, and gateway.
-#--------------------------------------------
-UpdateStatic() {
-   if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateStatic()"; return 1; fi
-   if [ -z "$dtype" ]; then echo "ERROR - no existing dns type specified for UpdateStatic()"; return 1; fi
-
-   if [ "$dtype" == "static" ]; then
-      #echo "Static --> DHCP Processing"
-      if [ -z "$hname" ]; then echo "ERROR - no existing hostname specified for Static()"; return 1; fi
-      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateStatic()"; return 1; fi
-      if [ -z "$ipaddr" ]; then echo "ERROR - no existing ip address specified for UpdateStatic()"; return 1; fi
-      if [ -z "$nmask" ]; then echo "ERROR - no existing netmask specified for UpdateStatic()"; return 1; fi
-      if [ -z "$gway" ]; then echo "ERROR - no existing gateway specified for UpdateStatic()"; return 1; fi
-
-      sed -i "s/hostname $hname/hostname $hostname/" $finterfaces
-      sed -i "s/$ipaddr/$address/" $finterfaces
-      sed -i "s/$nmask/$netmask/" $finterfaces
-      sed -i "s/$gway/$gateway/" $finterfaces
-   else
-      #echo "DHCP --> Static Processing"
-      if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateStatic()"; return 1; fi
-      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateStatic()"; return 1; fi
-      if [ -z "$ipaddress" ]; then echo "ERROR - no new ip address specified for UpdateStatic()"; return 1; fi
-      if [ -z "$netmask" ]; then echo "ERROR - no new netmask specified for UpdateStatic()"; return 1; fi
-      if [ -z "$gateway" ]; then echo "ERROR - no new gateway specified for UpdateStatic()"; return 1; fi
-
-      local value="\ \thostname $hostname\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway"
-      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
-      sed -i "$((line+1)),$((line+2))d" $finterfaces
-      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
-   fi
-}
-
-#--------------------------------------------
-#  ChooseNetwork()
-#     If setting static IP this function
-#     will prompt for hostname, dnstype,
-#     ip address, network mask, and gateway.
-#--------------------------------------------
-UpdateDHCP() {
-   if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateDHCP()"; return 1; fi
-   if [ -z "$dtype" ]; then echo "ERROR - no existing dns type specified for UpdateDHCP()"; return 1; fi
-
-   if [ "$dtype" == "static" ]; then
-      echo "Static --> DHCP Processing"
-      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateDHCP()"; return 1; fi
-      if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateDHCP()"; return 1; fi
-
-      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
-      sed -i "$((line+1)),$((line+5))d" $finterfaces
-      local value="\ \thostname $hostname"
-      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
-   else
-      echo "DHCP --> DHCP Processing"
-      if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateDHCP()"; return 1; fi
-      if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateDHCP()"; return 1; fi
-
-      local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
-      sed -i "$((line+1)),$((line+2))d" $finterfaces
-      local value="\ \thostname $hostname"
-      sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
-   fi
-}
-
-
-
 #==============================================================================
 #   Application System Update Functions
 #==============================================================================
@@ -344,12 +249,22 @@ SetupGIT () {
       chdir $HOME >> $LOG 2>&1
       SectionRow "CD to $HOME Directory" "CHANGED"
 
+      echo "====== MKDIR $WORKDIR ================" >> $LOG 2>&1
+      mkdir $WORKDIR >> $LOG 2>&1
+      SectionRow "Make $WORKDIR Directory" "CREATED"
+
+      echo "====== CD $WORKDIR ================" >> $LOG 2>&1
+      chdir $WORKDIR >> $LOG 2>&1
+      SectionRow "CD to $WORKDIR Directory" "CHANGED"
+
       echo "====== GIT CLONE $REPO ======" >> $LOG    2>&1
       git clone $REPO >> $LOG 2>&1
       SectionRow "Cloning ALPINE Repository" "DONE"
    else
       SectionRow "Clone ALPINE Repository from GITHUB" "BYPASSED" 1
    fi
+   
+   ProcessGIT
 }
 
 #------------------------------------------------
@@ -379,23 +294,18 @@ ProcessGIT() {
 
    echo "====== CD SCRIPTS DIRECTORY ======" >> $LOG 2>&1
    cd "$WORKDIR/scripts" >> $LOG 2>&1
-   SectionRow "Changing to $WORKDIR/packages" "CHANGED"
-
-   echo "====== CHMOD +X *.sh ======" >> $LOG 2>&1
-   chmod +x *.sh  >> $LOG 2>&1
-   SectionRow "Set EXECUTE permissions on all scripts" "DONE"
+   SectionRow "Changing to $WORKDIR/scripts" "CHANGED"
 
    echo "===== CREATE Directory $INCL ======" >> $LOG 2>&1
    if [[ ! -d "$INCL" ]]; then
       mkdir "$INCL" >> $LOG 2>&1
-      chmod -R 407 "$INCL" >> $LOG 2>&1
       SectionRow "Creating Directory $INCL" "CREATED"
    else
       SectionRow "Creating Directory $INCL" "BYPASSED" 1
    fi
 
    echo "====== Move SCRIPTS to $INCL  ======" >> $LOG 2>&1
-   cp *.sh "$INCL"  >> $LOG 2>&1
+   cp -f *.sh "$INCL"  >> $LOG 2>&1
    chmod -R 407 "$INCL" >> $LOG 2>&1
    SectionRow "Copy scripts to $INCL" "COPIED"
 
@@ -403,9 +313,10 @@ ProcessGIT() {
    cd "$WORKDIR" >> $LOG 2>&1
    SectionRow "Changing to $WORKDIR" "CHANGED"
 
-   echo "====== Move program to  to $SBIN ======" >> $LOG 2>&1
-   cp alpine-setup "$SBIN"  >> $LOG 2>&1
-   cp *.sh "$SBIN"  >> $LOG 2>&1
+   echo "====== Move program to $SBIN ======" >> $LOG 2>&1
+   cp -f alpine-setup "$SBIN"  >> $LOG 2>&1
+   cp -f *.sh "$INCL"  >> $LOG 2>&1
+   chmod -R 407 "$INCL" >> $LOG 2>&1
    SectionRow "Copy main program to $SBIN" "COPIED"
 }
 
@@ -451,6 +362,7 @@ AddUser() {
    echo "===== CREATE Directory /home/$USR/.ssh =====" >> $LOG 2>&1
    if [[ ! -d "/home/$USR/.ssh" ]]; then
       mkdir /home/$USR/.ssh >> $LOG 2>&1
+      chown -R $USR /home/$USR/.ssh >> $LOG 2>&1
       chmod 744 /home/$USR/.ssh >> $LOG 2>&1
       SectionRow "Creating Directory /home/$USR/.ssh" "CREATED"
    else
@@ -460,6 +372,7 @@ AddUser() {
    echo "===== Moving SSH KEYS to /home/$USR/.ssh =====" >> $LOG 2>&1
    if [[ -f "authorized_keys" ]]; then
       cp -f authorized_keys /home/$USR/.ssh >> $LOG 2>&1
+      chown -R $USR /home/$USR/.ssh >> $LOG 2>&1
       chmod 644 /home/$USR/.ssh/authorized_keys >> $LOG 2>&1
       SectionRow "Moving SSH KEYS to /home/$USR/.ssh" "MOVED"
    else
@@ -469,7 +382,8 @@ AddUser() {
    echo "===== CREATE Directory /root/.ssh =====" >> $LOG 2>&1
    if [[ ! -d "/root/.ssh" ]]; then
       mkdir /root/.ssh >> $LOG 2>&1
-      chmod 744 /home/$USR/.ssh >> $LOG 2>&1
+      chown -R $USR /home/$USR/.ssh >> $LOG 2>&1
+      chmod 744 /root/.ssh >> $LOG 2>&1
       SectionRow "CREATE Directory /root/.ssh" "CREATED"
    else
       SectionRow "CREATE Directory /root/.ssh" "BYPASSED" 1
@@ -478,6 +392,7 @@ AddUser() {
    echo "===== Moving SSH KEYS to /root/.ssh =====" >> $LOG 2>&1
    if [[ -f "authorized_keys" ]]; then 
       cp -f authorized_keys /root/.ssh >> $LOG 2>&1
+      chown -R $USR /root/.ssh >> $LOG 2>&1
       chmod 644 /root/.ssh/authorized_keys >> $LOG 2>&1
       SectionRow "Moving SSH KEYS to /root/.ssh" "MOVED"
    else
@@ -495,30 +410,6 @@ AddUser() {
    UpdateProfile
 }
 
-#------------------------------------------------
-#  MoveScripts()
-#     Function will move scripts from the GIT
-#     clone directory to /USR/SBIN.
-#------------------------------------------------
-MoveScripts() {
-   #  Move scripts to /USR/SBIN
-   #  change intop alpine and update permissions
-   echo "====== CD $WORKDIR ======" >> $LOG 2>&1
-   cd $WORKDIR  >> $LOG 2>&1
-   SectionRow "Changing to $WORKDIR" "DONE"
-
-   echo "====== MOVE ALP-SETUP to $SBIN ======" >> $LOG 2>&1
-   if [[ -f "alp-setup" ]]; then mv -f alp-setup "$SBIN" >> $LOG 2>&1; fi
-   SectionRow "Moving ALP-SETUP script to $SBIN" "DONE"
-
-   echo "====== MOVE UPDATE-ALP to $SBIN ======" >> $LOG 2>&1
-   if [[ -f "update-alp" ]]; then mv -f update-alp "$SBIN" >> $LOG 2>&1; fi
-   SectionRow "Moving UPDATE-ALP script to $SBIN" "DONE"
-
-   echo "====== CD $HOME ======" >> $LOG 2>&1
-   cd $HOME  >> $LOG 2>&1
-   SectionRow "Changing to $HOME" "DONE"
-}
 
 #------------------------------------------------
 #  UpdateProfile()
