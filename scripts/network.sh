@@ -28,29 +28,28 @@ gateway=
 #===================================
 #   Network Functions
 #===================================
-
 BackupNet() {
     echo "====== Create Backup of $fhosts ======" >> $LOG 2>&1
     if [ -f "${fhost}.bak" ]; then
-	   cp $fhosts "${fhost}.bak" >> $LOG 2>&1
-       SectionRow "Create Backup of $fhosts" "DONE"
-	else
+       cp $fhosts "${fhost}.bak" >> $LOG 2>&1
+       SectionRow "Create Backup of $fhosts" "CREATED"
+    else
        SectionRow "Create Backup of $fhosts" "BYPASSED" 1
     fi
 	
     echo "====== Create Backup of $fhostname ======" >> $LOG 2>&1
     if [ -f "${fhostname}.bak" ]; then
-	   cp $fhostname "${fhostname}.bak" >> $LOG 2>&1
-       SectionRow "Create Backup of $fhostname" "DONE"
-	else
+       cp $fhostname "${fhostname}.bak" >> $LOG 2>&1
+       SectionRow "Create Backup of $fhostname" "CREATED"
+    else
        SectionRow "Create Backup of $fhostname" "BYPASSED" 1
     fi
 	
     echo "====== Create Backup of $finterfaces ======" >> $LOG 2>&1
     if [ -f "${finterfaces}.bak" ]; then
-	   cp $finterfaces "${finterfaces}.bak" >> $LOG 2>&1
-       SectionRow "Create Backup of $finterfaces" "DONE"
-	else
+       cp $finterfaces "${finterfaces}.bak" >> $LOG 2>&1
+       SectionRow "Create Backup of $finterfaces" "CREATED"
+    else
        SectionRow "Create Backup of $finterfaces" "BYPASSED" 1
     fi
 }
@@ -105,6 +104,33 @@ GetAdapterInfo() {
    return 0
 }
 
+#--------------------------------------------
+#  ChangeHosts()
+#     This will do an update of the host
+#     name for machine.
+#--------------------------------------------
+ChangeHosts() {
+    echo "====== Update the ALPINE HOSTS file with $hostname ======" >> $LOG 2>&1
+    if [ -f "$fhosts" ]; then
+       local tmp=$(grep -A 0 "127.0.0.1" $fhosts | awk '{print $2}' | awk -F "." '{print $1}')
+       sed -i "s/$tmp/$hostname/g" $fhosts >> $LOG 2>&1
+       SectionRow "Update the ALPINE HOSTS file with $hostname" "COMPLETED"
+    else
+       SectionRow "Update the ALPINE HOSTS file with $hostname" "NO FILE" 1
+    fi
+
+    # Change Hostname File
+    echo "====== Update the ALPINE HOSTNAME file with $hostname ======" >> $LOG 2>&1
+    if [ -f "$fhostname" ]; then
+       tmp=$(awk '{print $1}' $fhostname)
+       sed -i "s/$tmp/$hostname/g" $fhostname >>$LOG 2>&1
+       SectionRow "Update the ALPINE HOSTNAME file with $hostname" "COMPLETED"
+    else
+       SectionRow "Update the ALPINE HOSTNAME file with $hostname" "NO FILE" 1
+    fi
+}
+
+
 
 #--------------------------------------------
 #  UpdateInterface()
@@ -115,9 +141,17 @@ GetAdapterInfo() {
 UpdateInterface() {
    if [ -z "$adapt" ]; then echo "ERROR - no network adapter specified for UpdateInterface()"; return 1; fi
    if [ -z "$dtype" ]; then echo "ERROR - there is no old dns type specified for UpdateInterface()"; return 1; fi
-   if [ -z "$dnstype" ]; then echo "ERROR - there is no new dns type specified for UpdateInterface()"; return 1; fi
+
+   if [ -z "$hostname" ]; then hostname="$hname"; fi
+   if [ -z "$dnstype" ]; then 
+      dnstype="$dtype"
+      address="$ipaddr"
+      netmask="$nmask"
+      gateway="$gway"
+   fi
 
    sed -i "s/iface $adapt inet $dtype/iface $adapt inet $dnstype/" $finterfaces
+   ChangeHosts
    if [ "$dnstype" == "static" ]; then
       UpdateStatic
    else
@@ -143,10 +177,11 @@ UpdateStatic() {
       if [ -z "$nmask" ]; then echo "ERROR - no existing netmask specified for UpdateStatic()"; return 1; fi
       if [ -z "$gway" ]; then echo "ERROR - no existing gateway specified for UpdateStatic()"; return 1; fi
 
-      sed -i "s/hostname $hname/hostname $hostname/" $finterfaces
+      echo "====== Update the Network Interface Info ($finterfaces) ======" >> $LOG 2>&1
       sed -i "s/$ipaddr/$address/" $finterfaces
       sed -i "s/$nmask/$netmask/" $finterfaces
       sed -i "s/$gway/$gateway/" $finterfaces
+      SectionRow "Update the Network Interface Information" "UPDATED"
    else
       #echo "DHCP --> Static Processing"
       if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateStatic()"; return 1; fi
@@ -155,10 +190,12 @@ UpdateStatic() {
       if [ -z "$netmask" ]; then echo "ERROR - no new netmask specified for UpdateStatic()"; return 1; fi
       if [ -z "$gateway" ]; then echo "ERROR - no new gateway specified for UpdateStatic()"; return 1; fi
 
+      echo "====== Update the Network Interface Info ($finterfaces) ======" >> $LOG 2>&1
       local value="\ \thostname $hostname\n\taddress $address\n\tnetmask $netmask\n\tgateway $gateway"
       local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
       sed -i "$((line+1)),$((line+2))d" $finterfaces
       sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+      SectionRow "Update the Network Interface Information" "UPDATED"
    fi
 }
 
@@ -177,19 +214,22 @@ UpdateDHCP() {
       if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateDHCP()"; return 1; fi
       if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateDHCP()"; return 1; fi
 
+      echo "====== Update the Network Interface Info ($finterfaces) ======" >> $LOG 2>&1
       local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
       sed -i "$((line+1)),$((line+5))d" $finterfaces
       local value="\ \thostname $hostname"
       sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+      SectionRow "Update the Network Interface Information" "UPDATED"
    else
       echo "DHCP --> DHCP Processing"
       if [ -z "$hostname" ]; then echo "ERROR - no new hostname specified for UpdateDHCP()"; return 1; fi
       if [ -z "$dnstype" ]; then echo "ERROR - no new dns type specified for UpdateDHCP()"; return 1; fi
 
+      echo "====== Update the Network Interface Info ($finterfaces) ======" >> $LOG 2>&1
       local line=$(grep -nm1 "iface $adapt inet" $finterfaces | cut -d: -f1)
       sed -i "$((line+1)),$((line+2))d" $finterfaces
       local value="\ \thostname $hostname"
       sed -i "/iface $adapt inet $dnstype/a $value" $finterfaces
+      SectionRow "Update the Network Interface Information" "UPDATED"
    fi
 }
-

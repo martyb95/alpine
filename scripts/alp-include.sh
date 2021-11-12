@@ -196,40 +196,52 @@ UpdateRepos() {
 #     as needing to be installed on the system.
 #------------------------------------------------
 InstallPkgs() {
+   echo "====== APK ADD BASH ================" >> $LOG 2>&1
    if [ "$iBash" == "Y" ]; then
-      echo "====== APK ADD BASH ================" >> $LOG 2>&1
       apk add bash >> $LOG 2>&1
       SectionRow "Adding BASH package" "ADDED"
+   else
+      SectionRow "Adding BASH package" "BYPASSED" 1
    fi
 
+   echo "====== APK ADD NANO ================" >> $LOG 2>&1
    if [ "$iNano" == "Y" ]; then
-      echo "====== APK ADD NANO ================" >> $LOG 2>&1
       apk add nano >> $LOG 2>&1
       SectionRow "Adding NANO editor package" "ADDED"
+   else
+      SectionRow "Adding NANO editor  package" "BYPASSED" 1
    fi
 
+   echo "====== APK ADD GIT ================" >> $LOG 2>&1
    if [ "$iGit" == "Y" ]; then
-      echo "====== APK ADD GIT ================" >> $LOG 2>&1
       apk add git >> $LOG 2>&1
       SectionRow "Adding GIT package" "ADDED"
+   else
+      SectionRow "Adding GIT package" "BYPASSED" 1
    fi
 
+   echo "====== APK ADD Docker ================" >> $LOG 2>&1
    if [ "$iDock" == "Y" ]; then
-      echo "====== APK ADD Docker ================" >> $LOG 2>&1
       apk add docker >> $LOG 2>&1
-      SectionRow "Adding Docker package" "ADDED"
+      SectionRow "Adding DOCKER package" "ADDED"
+   else
+      SectionRow "Adding DOCKER package" "BYPASSED" 1
    fi
 
+   echo "====== APK ADD Docker-Compose ================" >> $LOG 2>&1
    if [ "$iComp" == "Y" ]; then
-      echo "====== APK ADD Docker-Compose ================" >> $LOG 2>&1
       apk add docker-compose >> $LOG 2>&1
       SectionRow "Adding Docker-Compose package" "ADDED"
+   else
+      SectionRow "Adding Docker-Compose package" "BYPASSED" 1
    fi
 
+   echo "====== APK ADD Telegraph ================" >> $LOG 2>&1
    if [ "$iTele" == "Y" ]; then
-      echo "====== APK ADD Telegraph ================" >> $LOG 2>&1
       apk add telegraph >> $LOG 2>&1
       SectionRow "Adding Telegraph Agent package" "ADDED"
+   else
+      SectionRow "Adding Telegraph Agent package" "BYPASSED" 1
    fi
 
    UpdateRepos
@@ -281,7 +293,7 @@ ProcessGIT() {
    echo "====== CHMOD +X * ======" >> $LOG 2>&1
    chmod +x *  >> $LOG 2>&1
    chmod +x *.sh  >> $LOG 2>&1
-   SectionRow "Set EXECUTE permissions on all scripts" "DONE"
+   SectionRow "Set EXECUTE permissions on all scripts" "CHANGED"
 
    echo "====== CD PACKAGES DIRECTORY ======" >> $LOG 2>&1
    cd "$WORKDIR/packages" >> $LOG 2>&1
@@ -290,7 +302,7 @@ ProcessGIT() {
    echo "====== CHMOD +X * ======" >> $LOG 2>&1
    chmod +x *  >> $LOG 2>&1
    chmod +x *.sh  >> $LOG 2>&1
-   SectionRow "Set EXECUTE permissions on all scripts" "DONE"
+   SectionRow "Set EXECUTE permissions on all scripts" "CHANGED"
 
    echo "====== CD SCRIPTS DIRECTORY ======" >> $LOG 2>&1
    cd "$WORKDIR/scripts" >> $LOG 2>&1
@@ -344,19 +356,6 @@ AddUser() {
       SectionPrt "Adding User $USR to system"
       adduser -G "$GRP" "$USR"
       SectionRow "Add User $USR" "ADDED"
-   fi
-
-   echo "====== CD $WORKDIR/ssh/ ======" >> $LOG 2>&1
-   cd $WORKDIR/ssh >> $LOG 2>&1
-   SectionRow "Changing to $WORKDIR/ssh/" "CHANGED"
-
-   #  Move files to SSH directories
-   echo "===== Moving SSH files to /etc/ssh/ =====" >> $LOG 2>&1
-   if [[ -f "sshd_config" ]]; then
-      cp -f sshd_config /etc/ssh/ >> $LOG 2>&1
-      SectionRow "Moving SSH files to /etc/ssh/" "MOVED"
-   else
-      SectionRow "Moving SSH files to /etc/ssh/" "NOT FOUND" 1
    fi
 
    echo "===== CREATE Directory /home/$USR/.ssh =====" >> $LOG 2>&1
@@ -433,75 +432,53 @@ UpdateProfile() {
 #     to be modified as part of this operation.
 #------------------------------------------------
 SystemSetup() {
-    # Create backup of modified files
-    echo "====== Create Backup of $fhosts ======" >> $LOG 2>&1
-    cp $fhosts /etc/hosts.bak  >> $LOG 2>&1
-    SectionRow "Create Backup of $fhosts" "DONE"
-
-    echo "====== Create Backup of $fhostname ======" >> $LOG 2>&1
-    cp $fhostname /etc/hostname.bak >> $LOG 2>&1
-    SectionRow "Create Backup of $fhostname" "DONE"
-
-    echo "====== Create Backup of $finterfaces ======" >> $LOG 2>&1
-    cp $finterfaces /etc/network/interfaces.bak >> $LOG 2>&1
-    SectionRow "Create Backup of $finterfaces" "DONE"
-
-    echo "====== Create Backup of $fssh ======" >> $LOG 2>&1
-    cp $fssh /etc/ssh/ssh_config.bak >> $LOG 2>&1
-    SectionRow "Create Backup of $fssh" "DONE"
-
-    echo "====== Create Backup of $fsshd ======" >> $LOG 2>&1
-    cp $fsshd /etc/ssh/sshd_config.bak >> $LOG 2>&1
-    SectionRow "Create Backup of $fsshd" "DONE"
-
-    echo "====== Create Backup of $frepo ======" >> $LOG 2>&1
-    cp $frepo /etc/apk/repositories.bak >> $LOG 2>&1
-    SectionRow "Create Backup of $frepo" "DONE"
-
-    echo "====== Create Backup of $fprof ======" >> $LOG 2>&1
-    cp $fprof /etc/profile.bak >> $LOG 2>&1
-    SectionRow "Create Backup of $fprof" "DONE"
-
     # Update the ALPINE package repository
     echo "====== Update the ALPINE package repository ======" >> $LOG 2>&1
-    sed -i '1,10d' $frepo >> $LOG 2>&1
-    echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/main' >> $frepo
-    echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' >> $frepo
-    echo 'http://dl-cdn.alpinelinux.org/alpine/edge/main' >> $frepo
-    echo '#http://dl-cdn.alpinelinux.org/alpine/edge/testing' >> $frepo
-    echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> $frepo
-    apk update >> $LOG 2>&1
-    SectionRow "Update the ALPINE package repository" "COMPLETED"
+    if [ -f "$frepo" ]; then
+       sed -i '1,10d' $frepo >> $LOG 2>&1
+       echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/main' >> $frepo
+       echo 'http://dl-cdn.alpinelinux.org/alpine/latest-stable/community' >> $frepo
+       echo 'http://dl-cdn.alpinelinux.org/alpine/edge/main' >> $frepo
+       echo '#http://dl-cdn.alpinelinux.org/alpine/edge/testing' >> $frepo
+       echo 'http://dl-cdn.alpinelinux.org/alpine/edge/community' >> $frepo
+       apk update >> $LOG 2>&1
+       SectionRow "Update the ALPINE package repository" "COMPLETED"
+    else
+       SectionRow "Update the ALPINE package repository" "NO FILE" 1
+    fi
 
-    # Change SSH Config File
-    echo "====== Update the SSH Port to 9922 ======" >> $LOG 2>&1
-    sed -i "s/#   Port/Port/" $fssh >> $LOG 2>&1
-    sed -i "s/Port 22/Port 9922/" $fssh >> $LOG 2>&1
-    sed -i "s/#Port/Port/" $fsshd >> $LOG 2>&1
-    sed -i "s/Port 22/Port 9922/" $fsshd >> $LOG 2>&1
-    SectionRow "Update the SSH Port to 9922" "UPDATED"
+    echo "====== CD $WORKDIR/ssh/ ======" >> $LOG 2>&1
+    cd $WORKDIR/ssh >> $LOG 2>&1
+    SectionRow "Changing to $WORKDIR/ssh/" "CHANGED"
 
+    #  Move files to SSH directories
+    echo "===== Moving SSH config file to $fssh =====" >> $LOG 2>&1
+    if [[ -f "ssh_config" ]]; then
+      cp -f ssh_config $fssh >> $LOG 2>&1
+      SectionRow "Moving SSHD config file to $fssh" "MOVED"
+    else
+      SectionRow "Moving SSHD config file to $fssh" "NO FILE"
+    fi
 
-    # Change Hosts File
-    echo "====== Update the ALPINE HOSTS file with $hostname ======" >> $LOG 2>&1
-    local tmp=$(grep -A 0 "127.0.0.1" $fhosts | awk '{print $2}' | awk -F "." '{print $1}')
-    sed -i "s/$tmp/$hostname/g" $fhosts >> $LOG 2>&1
-    SectionRow "Update the ALPINE HOSTS file with $hostname" "COMPLETED"
-
-
-    # Change Hostname File
-    echo "====== Update the ALPINE HOSTNAME file with $hostname ======" >> $LOG 2>&1
-    tmp=$(awk '{print $1}' $fhostname) 
-    sed -i "s/$tmp/$hostname/g" $fhostname >>$LOG 2>&1
-    SectionRow "Update the ALPINE HOSTS file with $hostname" "COMPLETED"
-
+    #  Move files to SSH directories
+    echo "===== Moving SSHD config files to $fsshd =====" >> $LOG 2>&1
+    if [[ -f "sshd_config" ]]; then
+      cp -f sshd_config $fsshd >> $LOG 2>&1
+      SectionRow "Moving SSHD config file to $fsshd" "MOVED"
+    else
+      SectionRow "Moving SSHD config file to $fsshd" "NO FILE"
+    fi
 
     # Remove MOTD
     echo "====== Removing MOTD File ======" >> $LOG 2>&1
-    if [ "$iMOTD" == "Y" ]; then
-       rm /etc/motd >> $LOG 2>&1
-       SectionRow "Removing Message Of The Day(MOTD) File" "REMOVED"
+    if [ -f "/etc/motd" ]; then
+       if [ "$iMOTD" == "Y" ]; then
+          rm /etc/motd >> $LOG 2>&1
+          SectionRow "Removing Message Of The Day(MOTD) File" "REMOVED"
+       else
+          SectionRow "Removing Message Of The Day(MOTD) File" "BYPASSED" 1
+       fi
     else
-       SectionRow "Removing Message Of The Day(MOTD) File" "BYPASSED" 1
+       SectionRow "Removing Message Of The Day(MOTD) File" "NO FILE" 1
     fi
 }
