@@ -172,7 +172,6 @@ ChooseNetwork() {
    printf '     %-12s %-16s %-16s\n' "IP Address:" "$ipaddr" "$ipaddress"
    printf '     %-12s %-16s %-16s\n' "Netmask:" "$nmask" "$netmask"
    printf '     %-12s %-16s %-16s\n\n' "Gateway:" "$gway" "$gateway"
-
 }
 
 
@@ -271,19 +270,20 @@ SetupGIT () {
       chdir $HOME >> $LOG 2>&1
       SectionRow "CD to $HOME Directory" "CHANGED"
 
-      echo "====== MKDIR $WORKDIR ================" >> $LOG 2>&1
-      mkdir $WORKDIR >> $LOG 2>&1
-      SectionRow "Make $WORKDIR Directory" "CREATED"
+      echo "====== GIT CLONE $REPO ======" >> $LOG    2>&1
+      git clone $REPO >> $LOG 2>&1
+      SectionRow "Cloning ALPINE Repository" "DONE"
 
       echo "====== CD $WORKDIR ================" >> $LOG 2>&1
       chdir $WORKDIR >> $LOG 2>&1
       SectionRow "CD to $WORKDIR Directory" "CHANGED"
 
-      echo "====== GIT CLONE $REPO ======" >> $LOG    2>&1
-      git clone $REPO >> $LOG 2>&1
-      SectionRow "Cloning ALPINE Repository" "DONE"
+      echo "====== GIT Setup global user & email ======" >> $LOG    2>&1
+      git config --global user.name "martyb95" >> $LOG 2>&1
+      git config --global user.email "mboni95@gmail.com" >> $LOG 2>&1
+      SectionRow "GIT Setup global user & email" "DONE"
    else
-      SectionRow "Clone ALPINE Repository from GITHUB" "BYPASSED" 1
+      SectionRow "Clone GIT repo $REPO " "BYPASSED" 1
    fi
    
    ProcessGIT
@@ -301,8 +301,7 @@ ProcessGIT() {
    SectionRow "Changing to $WORKDIR" "CHANGED"
 
    echo "====== CHMOD +X * ======" >> $LOG 2>&1
-   chmod +x *  >> $LOG 2>&1
-   chmod +x *.sh  >> $LOG 2>&1
+   chmod +x * >> $LOG 2>&1
    SectionRow "Set EXECUTE permissions on all scripts" "CHANGED"
 
    echo "====== CD PACKAGES DIRECTORY ======" >> $LOG 2>&1
@@ -311,12 +310,15 @@ ProcessGIT() {
 
    echo "====== CHMOD +X * ======" >> $LOG 2>&1
    chmod +x *  >> $LOG 2>&1
-   chmod +x *.sh  >> $LOG 2>&1
    SectionRow "Set EXECUTE permissions on all scripts" "CHANGED"
 
    echo "====== CD SCRIPTS DIRECTORY ======" >> $LOG 2>&1
    cd "$WORKDIR/scripts" >> $LOG 2>&1
    SectionRow "Changing to $WORKDIR/scripts" "CHANGED"
+
+   echo "====== CHMOD +X * ======" >> $LOG 2>&1
+   chmod +x *  >> $LOG 2>&1
+   SectionRow "Set EXECUTE permissions on all scripts" "CHANGED"
 
    echo "===== CREATE Directory $INCL ======" >> $LOG 2>&1
    if [[ ! -d "$INCL" ]]; then
@@ -333,14 +335,44 @@ ProcessGIT() {
 
    echo "====== CD $WORKDIR DIRECTORY ======" >> $LOG 2>&1
    cd "$WORKDIR" >> $LOG 2>&1
-   SectionRow "Changing to $WORKDIR" "CHANGED"
+   SectionRow "Changing to $WORKDIR Directory" "CHANGED"
 
    echo "====== Move program to $SBIN ======" >> $LOG 2>&1
    cp -f alpine-setup "$SBIN"  >> $LOG 2>&1
-   cp -f *.sh "$INCL"  >> $LOG 2>&1
-   chmod -R 407 "$INCL" >> $LOG 2>&1
    SectionRow "Copy main program to $SBIN" "COPIED"
 }
+
+#------------------------------------------------
+#  ProcessBootScripts
+#     Function will set local.d as part of the
+#     boot process and run any script in the dir
+#------------------------------------------------
+ProcessBootScripts() {
+   echo "====== CD $HOME ======" >> $LOG 2>&1
+   cd "$HOME" >> $LOG 2>&1
+   SectionRow "Changing to $HOME" "CHANGED"
+
+   echo "====== Include local.d in boot process ======" >> $LOG 2>&1
+   rc-update add local default >> $LOG 2>&1
+   SectionRow "Include local.d in boot process" "CHANGED"
+
+   echo "====== CD $WORKDIR/packages ======" >> $LOG 2>&1
+   cd "$WORKDIR/packages" >> $LOG 2>&1
+   SectionRow "Changing to $WORKDIR/packages" "CHANGED"
+
+   echo "====== Copy pfetch program to $SBIN ======" >> $LOG 2>&1
+   cp -f pfetch "$SBIN"  >> $LOG 2>&1
+   SectionRow "Copy pfetch program to $SBIN" "COPIED"
+
+   echo "====== Copy startinfo script to /etc/local.d ======" >> $LOG 2>&1
+   cp -f startinfo.sh "/etc/local.d/"  >> $LOG 2>&1
+   SectionRow " Copy startinfo script to /etc/local.d" "COPIED"
+
+   echo "====== CD $WORKDIR ======" >> $LOG 2>&1
+   cd "$WORKDIR" >> $LOG 2>&1
+   SectionRow "Changing to $WORKDIR" "CHANGED"
+}
+
 
 #------------------------------------------------
 #  AddUser() $1 $2

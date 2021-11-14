@@ -61,6 +61,7 @@ main() {
    SectionHdr "Alpine System Setup"
    InstallPkgs
    SystemSetup
+   ProcessBootScripts
    SectionFtr
 
    SectionHdr "Setup Users & Permissions"
