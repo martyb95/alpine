@@ -30,7 +30,7 @@ gateway=
 #===================================
 BackupNet() {
     echo "====== Create Backup of $fhosts ======" >> $LOG 2>&1
-    if [ -f "${fhost}.bak" ]; then
+    if [ ! -f "${fhost}.bak" ]; then
        cp $fhosts "${fhost}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $fhosts" "CREATED"
     else
@@ -38,7 +38,7 @@ BackupNet() {
     fi
 	
     echo "====== Create Backup of $fhostname ======" >> $LOG 2>&1
-    if [ -f "${fhostname}.bak" ]; then
+    if [ ! -f "${fhostname}.bak" ]; then
        cp $fhostname "${fhostname}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $fhostname" "CREATED"
     else
@@ -46,7 +46,7 @@ BackupNet() {
     fi
 	
     echo "====== Create Backup of $finterfaces ======" >> $LOG 2>&1
-    if [ -f "${finterfaces}.bak" ]; then
+    if [ ! -f "${finterfaces}.bak" ]; then
        cp $finterfaces "${finterfaces}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $finterfaces" "CREATED"
     else
@@ -178,7 +178,7 @@ UpdateStatic() {
       if [ -z "$gway" ]; then echo "ERROR - no existing gateway specified for UpdateStatic()"; return 1; fi
 
       echo "====== Update the Network Interface Info ($finterfaces) ======" >> $LOG 2>&1
-      sed -i "s/$ipaddr/$address/" $finterfaces
+      sed -i "s/$ipaddr/$ipaddress/" $finterfaces
       sed -i "s/$nmask/$netmask/" $finterfaces
       sed -i "s/$gway/$gateway/" $finterfaces
       SectionRow "Update the Network Interface Information" "UPDATED"

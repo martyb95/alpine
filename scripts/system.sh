@@ -25,34 +25,34 @@ fprof="/etc/profile"
 #-------------------------------------------------
 BackupSys() {
     echo "====== Create Backup of $fssh ======" >> $LOG 2>&1
-    if [ -f "${fssh}.bak" ]; then
-	   cp $fssh "${fsshs}.bak" >> $LOG 2>&1
+    if [ ! -f "${fssh}.bak" ]; then
+       cp $fssh "${fsshs}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $fssh" "DONE"
-	else
+    else
        SectionRow "Create Backup of $fssh" "BYPASSED" 1
     fi
 
     echo "====== Create Backup of $fsshd ======" >> $LOG 2>&1
-    if [ -f "${fsshd}.bak" ]; then
-	   cp $fsshd "${fsshd}.bak" >> $LOG 2>&1
+    if [ ! -f "${fsshd}.bak" ]; then
+       cp $fsshd "${fsshd}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $fsshd" "DONE"
-	else
+    else
        SectionRow "Create Backup of $fsshd" "BYPASSED" 1
     fi
 
     echo "====== Create Backup of $frepo ======" >> $LOG 2>&1
-    if [ -f "${frepo}.bak" ]; then
-	   cp $frepo "${frepo}.bak" >> $LOG 2>&1
+    if [ ! -f "${frepo}.bak" ]; then
+       cp $frepo "${frepo}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $frepo" "DONE"
-	else
+    else
        SectionRow "Create Backup of $frepo" "BYPASSED" 1
     fi
 	
     echo "====== Create Backup of $fprof ======" >> $LOG 2>&1
-    if [ -f "${fprof}.bak" ]; then
-	   cp $fprof "${fprof}.bak" >> $LOG 2>&1
+    if [ ! -f "${fprof}.bak" ]; then
+       cp $fprof "${fprof}.bak" >> $LOG 2>&1
        SectionRow "Create Backup of $fprof" "DONE"
-	else
+    else
        SectionRow "Create Backup of $fprof" "BYPASSED" 1
     fi
 }

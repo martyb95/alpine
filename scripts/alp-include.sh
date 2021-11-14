@@ -109,12 +109,12 @@ ChooseAdapter() {
 
    printf "\n      Adapter %s Settings\n" "$adapt"
    printf "     %-29s\n" $(printf "%-29s" | tr " " "-")
-   printf '     %-12s %-16s %-16s \n' "Adapter:" "${adapt}"
-   printf '     %-12s %-16s %-16s \n' "Hostname:" "${hname}"
-   printf '     %-12s %-16s %-16s \n' "DNS Type:" "${dtype}"
-   printf '     %-12s %-16s %-16s \n' "IP Address:" "${ipaddr}"
-   printf '     %-12s %-16s %-16s \n' "Netmask:" "${nmask}"
-   printf '     %-12s %-16s %-16s \n\n' "Gateway:" "${gway}"
+   printf '     %-12s %-16s\n' "Adapter:" "$adapt"
+   printf '     %-12s %-16s\n' "Hostname:" "$hname"
+   printf '     %-12s %-16s\n' "DNS Type:" "$dtype"
+   printf '     %-12s %-16s\n' "IP Address:" "$ipaddr"
+   printf '     %-12s %-16s\n' "Netmask:" "$nmask"
+   printf '     %-12s %-16s\n\n' "Gateway:" "$gway"
 
    hname=$(Trim "$hname")
    dtype=$(Trim "$dtype")
@@ -163,6 +163,16 @@ ChooseNetwork() {
          GetInput "Enter New Gateway" "$gway"  && gateway=$retval
       fi
    fi
+
+   printf "\n      Adapter %s Settings\n" "$adapt"
+   printf "     %-46s\n" $(printf "%-46s" | tr " " "-")
+   printf '     %-12s %-16s\n' "Adapter:" "$adapt"
+   printf '     %-12s %-16s %-16s\n' "Hostname:" "$hname" "$hostname"
+   printf '     %-12s %-16s %-16s\n' "DNS Type:" "$dtype" "$dnstype"
+   printf '     %-12s %-16s %-16s\n' "IP Address:" "$ipaddr" "$ipaddress"
+   printf '     %-12s %-16s %-16s\n' "Netmask:" "$nmask" "$netmask"
+   printf '     %-12s %-16s %-16s\n\n' "Gateway:" "$gway" "$gateway"
+
 }
 
 
